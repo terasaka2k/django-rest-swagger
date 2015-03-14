@@ -222,9 +222,11 @@ test_paths = [
     {'path': '/top'},
     {'path': '/doc/index'},
     {'path': '/api/v1/echo'},
+    {'path': '/api/{version}/'},
     {'path': '/api/{version}/echo'},
-    {'path': '/api/v{version}/echo'},
-    {'path': '/api/v{version}/print'},
+    {'path': '/api/v{version}/'},
+    {'path': '/api/v{version}/echo/'},
+    {'path': '/api/v{version}/echo/{x}'},
 ]
 
 
