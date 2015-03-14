@@ -54,41 +54,7 @@ class UrlParser(object):
 
         apis -- list of APIs as returned by self.get_apis
         """
-        root_paths = set()
-        api_paths = [endpoint['path'].strip("/") for endpoint in apis]
 
-        for path in api_paths:
-            #  If a URLs /resource/ and /resource/{pk} exist, use the base
-            #  as the resource. If there is no base resource URL, then include
-            path_base = path.split('/{')[0]
-            if '/{' in path and path_base in api_paths:
-                continue
-            root_paths.add(path_base)
-
-        top_level_apis = self.__filter_top_level_apis__(root_paths)
-
-        return sorted(top_level_apis, key=self.__get_last_element__)
-
-    def __filter_top_level_apis__(self, root_paths):
-        """
-        Returns top level APIs
-        """
-        filtered_paths = set()
-        base_path = self.__get_base_path__(root_paths)
-        for path in root_paths:
-            resource = path.replace(base_path, '').split('/')[0]
-            filtered_paths.add(base_path + resource)
-
-        return list(filtered_paths)
-
-    def __get_base_path__(self, root_paths):
-        base_path = os.path.commonprefix(root_paths)
-        slash_index = base_path.rfind('/') + 1
-        base_path = base_path[:slash_index]
-
-        return base_path
-
-    def simply_get_top_level_apis(self, apis):
         api_paths = [endpoint['path'].strip('/').split('/{', 1)[0] for endpoint in apis]
 
         def get_prefix():
