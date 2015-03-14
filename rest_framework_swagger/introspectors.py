@@ -329,7 +329,7 @@ class BaseMethodIntrospector(object):
         """
         Gets the parameters from the URL
         """
-        url_params = re.findall('/{([^}]*)}', self.path)
+        url_params = re.findall('{([^}]*)}', self.path)
         params = []
 
         for param in url_params:
