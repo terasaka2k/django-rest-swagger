@@ -88,6 +88,31 @@ class UrlParser(object):
 
         return base_path
 
+    def simply_get_top_level_apis(self, apis):
+        api_paths = [endpoint['path'].strip('/').split('/{', 1)[0] for endpoint in apis]
+
+        def get_prefix():
+            commonprefix = os.path.commonprefix(api_paths)
+            components = commonprefix.rsplit('/', 1)
+            if len(components) > 1:
+                return components[0] + '/'
+            return components[0]
+
+        def get_heads(paths):
+            return (path.split('/', 1)[0] for path in paths)
+
+        prefix = get_prefix()
+        if not prefix:
+            heads = get_heads(api_paths)
+            resource_paths = set(heads)
+        else:
+            base_len = len(prefix)
+            tails = (path[base_len:] for path in api_paths)
+            heads = get_heads(tails)
+            resource_paths = set([prefix + head for head in heads])
+
+        return sorted(resource_paths, key=self.__get_last_element__)
+
     def __get_last_element__(self, paths):
         split_paths = paths.split('/')
         return split_paths[len(split_paths) - 1]
@@ -191,3 +216,108 @@ class UrlParser(object):
             return True
 
         return False
+
+
+test_paths = [
+    {'path': '/top'},
+    {'path': '/doc/index'},
+    {'path': '/api/v1/echo'},
+    {'path': '/api/{version}/echo'},
+    {'path': '/api/v{version}/echo'},
+    {'path': '/api/v{version}/print'},
+]
+
+
+def powerset(iterable):
+    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    import itertools
+    s = list(iterable)
+    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s)+1))
+
+
+import pytest
+
+@pytest.mark.parametrize('apis', powerset(test_paths))
+def test_resources(apis):
+    urlparser = UrlParser()
+
+    top_apis1 = urlparser.get_top_level_apis(apis)
+    top_apis2 = urlparser.simply_get_top_level_apis(apis)
+
+    assert top_apis1 == top_apis2
+
+
+def test_get_top_level_apis():
+    urlparser = UrlParser()
+
+    def check_apis(paths, expected_apis):
+        apis = [{'path': p} for p in paths]
+
+        top_level_apis = urlparser.get_top_level_apis(apis)
+        assert top_level_apis == expected_apis
+
+        top_level_apis = urlparser.simply_get_top_level_apis(apis)
+        assert top_level_apis == expected_apis
+
+    check_apis(
+        [
+            '/doc/index',
+            '/api/{version}/echo'
+        ],
+        ['api', 'doc']
+    )
+
+    check_apis(
+        [
+            '/api/echo'
+        ],
+        ['api/echo']
+    )
+
+    check_apis(
+        [
+            '/api/{version}/echo'
+        ],
+        ['api']
+    )
+
+    check_apis(
+        [
+            '/api/{version}/'
+            '/api/{version}/echo'
+        ],
+        ['api']
+    )
+    check_apis(
+        [
+            '/api/{version}/'
+            '/api/{version}/echo'
+            '/api/v{number}/echo'
+        ],
+        ['api']
+    )
+
+    check_apis(
+        [
+            '/api/{version}/'
+            '/api/{version}/echo'
+            '/api/v{number}/'
+            '/api/v{number}/echo'
+        ],
+        ['api']
+    )
+
+    check_apis(
+        [
+            '/api/v{number}/',
+            '/api/v{number}/echo'
+        ],
+        ['api/v{number}']
+    )
+
+    check_apis(
+        [
+            '/api/v{number}/echo'
+        ],
+        ['api/v{number}/echo']
+    )
