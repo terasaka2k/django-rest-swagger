@@ -289,3 +289,6 @@ def test_get_top_level_apis():
         ],
         ['api/v{number}/echo']
     )
+
+
+#  PYTHONPATH=.:tests/cigar_example py.test rest_framework_swagger/urlparser.py --color=no --ds=cigar_example.settings -s --maxfail=1 -v
